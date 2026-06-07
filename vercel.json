@@ -1,7 +1,6 @@
 {
-  "buildCommand": "npm install && npm run build",
-  "outputDirectory": "dist",
-  "installCommand": "npm install",
-  "framework": "vite",
-  "rootDirectory": "tamaprint-app"
+  "buildCommand": "cd tamaprint-app && npm install && npm run build",
+  "outputDirectory": "tamaprint-app/dist",
+  "installCommand": "cd tamaprint-app && npm install",
+  "framework": "vite"
 }
