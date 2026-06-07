@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { ResinId, ResinShade } from '../data/resins'
+import { RESINS } from '../data/resins'
 import type { AddOnType } from '../data/printers'
 
 export type PrintStep =
@@ -160,8 +161,10 @@ export const useGameStore = create<GameState>()(
           // Finalize
           const grade = computeGrade(stepScores)
           const { xp, totalPrints, dailyPrintsLeft } = get()
-          const resin = currentSession?.resinId
-          const xpEarned = 20 + (resin ? 0 : 0) // base; bonus added in result screen
+          const resinData = currentSession?.resinId ? RESINS[currentSession.resinId] : null
+          const gradeMultiplier: Record<string, number> = { 'S+': 2, S: 1.5, A: 1.2, B: 1, C: 0.7, D: 0.4, F: 0.1 }
+          const baseXp = (resinData?.xpBonus ?? 20) + 10
+          const xpEarned = Math.round(baseXp * (gradeMultiplier[grade] ?? 1))
           const newXp = xp + xpEarned
           const newLevel = computeLevel(level, newXp)
 
