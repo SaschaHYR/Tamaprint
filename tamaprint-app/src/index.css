@@ -6,6 +6,12 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  height: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -13,11 +19,12 @@ body {
   color: #e0e0ee;
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
-  min-height: 100vh;
+  overscroll-behavior: none;
 }
 
 #root {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -26,6 +33,27 @@ body {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
 }
 
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: #12121a; }
+/* Safe area for notch/bottom bar */
+.safe-bottom {
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}
+.safe-top {
+  padding-top: max(1.5rem, env(safe-area-inset-top));
+}
+
+/* Touch target minimum size */
+button, [role="button"] {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #2a2a3a; border-radius: 2px; }
+
+/* Pixel art rendering */
+.pixel-art {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}

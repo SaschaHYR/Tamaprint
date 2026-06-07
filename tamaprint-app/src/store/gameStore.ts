@@ -10,7 +10,6 @@ export type PrintStep =
   | 'calibration'
   | 'mixing'
   | 'temperature'
-  | 'resin_settings'
   | 'resin_level'
   | 'printing'
   | 'first_layer'
@@ -22,73 +21,70 @@ export type PrintGrade = 'F' | 'D' | 'C' | 'B' | 'A' | 'S' | 'S+'
 
 export interface StepScore {
   step: PrintStep
-  score: number // 0-100
+  score: number
 }
 
 export interface PrintSession {
   resinId: ResinId
   shade: ResinShade
+  miniGame: PrintStep       // the single selected mini-game
   stepScores: StepScore[]
   finalGrade: PrintGrade | null
   xpEarned: number
 }
 
 export interface GameState {
-  // Player
   level: number
   xp: number
   totalPrints: number
-
-  // Daily session
   dailyPrintsLeft: number
-  lastResetDate: string // ISO date string
-
-  // Unlocked add-ons
+  lastResetDate: string
   unlockedAddOns: AddOnType[]
-
-  // Current print flow
   currentStep: PrintStep
   currentSession: Partial<PrintSession> | null
 
-  // Actions
   startNewPrint: () => void
   selectResin: (resinId: ResinId, shade: ResinShade) => void
   completeStep: (step: PrintStep, score: number) => void
-  skipToNextStep: () => void
   abandonPrint: () => void
   resetDaily: () => void
-
-  // Internal
-  _advanceToNextStep: (currentStep: PrintStep, score: number) => void
+  _advance: (step: PrintStep, score: number) => void
 }
 
-const XP_PER_LEVEL = (level: number) => 100 + level * 50
+// ─── Mini-game pool per context ───────────────────────────────────────────────
 
-const getNextStep = (
-  current: PrintStep,
-  level: number,
-  unlockedAddOns: AddOnType[]
-): PrintStep | null => {
-  const needsCalibration = level <= 20
-  const hasProwash = unlockedAddOns.includes('prowash_s')
-  const hasNanocure = unlockedAddOns.includes('nanocure')
+function getMiniGamePool(level: number, addOns: AddOnType[]): PrintStep[] {
+  const pool: PrintStep[] = ['resin_level', 'first_layer']
 
-  const flow: PrintStep[] = [
-    'select_resin',
-    ...(needsCalibration ? ['calibration', 'mixing', 'temperature', 'resin_settings'] as PrintStep[] : []),
-    'resin_level',
-    'printing',
-    'first_layer',
-    ...(hasProwash ? [] : ['washing'] as PrintStep[]),
-    ...(hasNanocure ? [] : ['curing'] as PrintStep[]),
-    'result',
-  ]
+  if (level >= 11 && level <= 20) {
+    pool.push('calibration', 'mixing', 'temperature')
+  }
+  if (!addOns.includes('prowash_s')) {
+    pool.push('washing')
+  }
+  if (!addOns.includes('nanocure')) {
+    pool.push('curing')
+  }
 
+  return pool
+}
+
+function pickMiniGame(level: number, addOns: AddOnType[]): PrintStep {
+  const pool = getMiniGamePool(level, addOns)
+  return pool[Math.floor(Math.random() * pool.length)]
+}
+
+// ─── Flow: select_resin → miniGame → printing → result ───────────────────────
+
+function getNextStep(current: PrintStep, miniGame: PrintStep): PrintStep | null {
+  const flow: PrintStep[] = ['select_resin', miniGame, 'printing', 'result']
   const idx = flow.indexOf(current)
   return idx >= 0 && idx < flow.length - 1 ? flow[idx + 1] : null
 }
 
-const computeGrade = (scores: StepScore[]): PrintGrade => {
+// ─── Grade ────────────────────────────────────────────────────────────────────
+
+function computeGrade(scores: StepScore[]): PrintGrade {
   if (scores.length === 0) return 'F'
   const avg = scores.reduce((s, x) => s + x.score, 0) / scores.length
   if (avg >= 98) return 'S+'
@@ -100,12 +96,31 @@ const computeGrade = (scores: StepScore[]): PrintGrade => {
   return 'F'
 }
 
+const XP_MULTIPLIER: Record<string, number> = {
+  'S+': 2, S: 1.5, A: 1.2, B: 1, C: 0.7, D: 0.4, F: 0.1,
+}
+
 const todayISO = () => new Date().toISOString().slice(0, 10)
+
+function computeLevel(current: number, xp: number): number {
+  let level = current
+  while (xp >= (100 + level * 50) && level < 100) level++
+  return level
+}
+
+function computeUnlocks(level: number): AddOnType[] {
+  const u: AddOnType[] = []
+  if (level >= 41) u.push('prowash_s')
+  if (level >= 51) u.push('nanocure')
+  return u
+}
+
+// ─── Store ────────────────────────────────────────────────────────────────────
 
 export const useGameStore = create<GameState>()(
   persist(
     (set, get) => ({
-      level: 11, // start at elegoo for dev
+      level: 11,
       xp: 0,
       totalPrints: 0,
       dailyPrintsLeft: 5,
@@ -114,57 +129,52 @@ export const useGameStore = create<GameState>()(
       currentStep: 'idle',
       currentSession: null,
 
-      resetDaily: () => {
+      resetDaily() {
         const today = todayISO()
         if (get().lastResetDate !== today) {
           set({ dailyPrintsLeft: 5, lastResetDate: today })
         }
       },
 
-      startNewPrint: () => {
-        const { resetDaily } = get()
-        resetDaily()
-        if (get().dailyPrintsLeft <= 0) return
-        set({ currentStep: 'select_resin', currentSession: {} })
-      },
-
-      selectResin: (resinId, shade) => {
-        const { level, unlockedAddOns } = get()
-        const next = getNextStep('select_resin', level, unlockedAddOns) ?? 'result'
+      startNewPrint() {
+        get().resetDaily()
+        const { level, unlockedAddOns, dailyPrintsLeft } = get()
+        if (dailyPrintsLeft <= 0) return
+        const miniGame = pickMiniGame(level, unlockedAddOns)
         set({
-          currentSession: { resinId, shade, stepScores: [] },
-          currentStep: next,
+          currentStep: 'select_resin',
+          currentSession: { miniGame, stepScores: [] },
         })
       },
 
-      completeStep: (step, score) => {
-        get()._advanceToNextStep(step, score)
+      selectResin(resinId, shade) {
+        const { currentSession } = get()
+        const miniGame = currentSession?.miniGame ?? 'resin_level'
+        set({
+          currentSession: { ...currentSession, resinId, shade },
+          currentStep: miniGame,
+        })
       },
 
-      skipToNextStep: () => {
-        const { currentStep, level, unlockedAddOns } = get()
-        const next = getNextStep(currentStep, level, unlockedAddOns)
-        if (next) set({ currentStep: next })
+      completeStep(step, score) {
+        get()._advance(step, score)
       },
 
-      abandonPrint: () => {
+      abandonPrint() {
         set({ currentStep: 'idle', currentSession: null })
       },
 
-      _advanceToNextStep: (step, score) => {
-        const { currentSession, level, unlockedAddOns } = get()
+      _advance(step, score) {
+        const { currentSession, level, xp, totalPrints, dailyPrintsLeft } = get()
+        const miniGame = currentSession?.miniGame ?? 'resin_level'
         const prev = currentSession?.stepScores ?? []
         const stepScores = [...prev, { step, score }]
-        const next = getNextStep(step, level, unlockedAddOns)
+        const next = getNextStep(step, miniGame)
 
         if (!next || next === 'result') {
-          // Finalize
           const grade = computeGrade(stepScores)
-          const { xp, totalPrints, dailyPrintsLeft } = get()
-          const resinData = currentSession?.resinId ? RESINS[currentSession.resinId] : null
-          const gradeMultiplier: Record<string, number> = { 'S+': 2, S: 1.5, A: 1.2, B: 1, C: 0.7, D: 0.4, F: 0.1 }
-          const baseXp = (resinData?.xpBonus ?? 20) + 10
-          const xpEarned = Math.round(baseXp * (gradeMultiplier[grade] ?? 1))
+          const resin = currentSession?.resinId ? RESINS[currentSession.resinId] : null
+          const xpEarned = Math.round(((resin?.xpBonus ?? 20) + 10) * (XP_MULTIPLIER[grade] ?? 1))
           const newXp = xp + xpEarned
           const newLevel = computeLevel(level, newXp)
 
@@ -188,20 +198,3 @@ export const useGameStore = create<GameState>()(
     { name: 'tamaprint-save' }
   )
 )
-
-function computeLevel(current: number, xp: number): number {
-  let level = current
-  let threshold = XP_PER_LEVEL(level)
-  while (xp >= threshold && level < 100) {
-    level++
-    threshold += XP_PER_LEVEL(level)
-  }
-  return level
-}
-
-function computeUnlocks(level: number): AddOnType[] {
-  const unlocks: AddOnType[] = []
-  if (level >= 41) unlocks.push('prowash_s')
-  if (level >= 51) unlocks.push('nanocure')
-  return unlocks
-}

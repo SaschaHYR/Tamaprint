@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useGameStore } from '../store/gameStore'
 import { getAvailableResins, type Resin } from '../data/resins'
+import PixelSprite from '../components/PixelSprite'
+import { SPRITE_BOTTLE, getBottlePalette } from '../data/sprites'
 
 const DIFFICULTY_LABELS = ['', '●', '●●', '●●●', '●●●●']
 const DIFFICULTY_COLORS = ['', '#34d399', '#60a5fa', '#f59e0b', '#ef4444']
@@ -18,14 +20,14 @@ export default function ResinSelectScreen() {
   }
 
   return (
-    <div className="flex flex-col h-full min-h-screen p-6 max-w-sm mx-auto">
+    <div className="flex flex-col h-dvh max-w-sm mx-auto px-5 safe-top safe-bottom">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <button onClick={abandonPrint} className="font-mono text-xs text-white/30 hover:text-white/60 transition-colors">
+      <div className="flex items-center justify-between py-4">
+        <button onClick={abandonPrint} className="font-mono text-xs text-white/30 hover:text-white/60 transition-colors py-2 pr-4">
           ← Annuler
         </button>
-        <span className="font-mono text-xs text-white/30 tracking-widest uppercase">Choisir résine</span>
-        <span className="font-mono text-xs text-purple-400">{resins.length} disponibles</span>
+        <span className="font-mono text-xs text-white/30 tracking-widest uppercase">Résine</span>
+        <span className="font-mono text-xs text-purple-400">{resins.length} dispo.</span>
       </div>
 
       {/* Resin grid */}
@@ -46,10 +48,11 @@ export default function ResinSelectScreen() {
             }}
           >
             <div className="flex items-center gap-3">
-              {/* Color swatch */}
-              <div
-                className="w-8 h-8 rounded-lg shrink-0 border border-white/10"
-                style={{ background: resin.color }}
+              {/* Pixel art bottle */}
+              <PixelSprite
+                sprite={SPRITE_BOTTLE}
+                palette={getBottlePalette(resin.color)}
+                pixelSize={2}
               />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">

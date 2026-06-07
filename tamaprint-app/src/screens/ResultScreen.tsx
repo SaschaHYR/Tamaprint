@@ -30,7 +30,7 @@ export default function ResultScreen() {
   const handleClose = () => store.abandonPrint()
 
   return (
-    <div className="flex flex-col items-center h-full min-h-screen p-6 max-w-sm mx-auto">
+    <div className="flex flex-col items-center h-dvh max-w-sm mx-auto px-5 safe-top safe-bottom">
       {/* Grade reveal */}
       <div className="flex-1 flex flex-col items-center justify-center w-full">
         {/* Particle burst for S/S+ */}

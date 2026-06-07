@@ -63,7 +63,7 @@ export default function ResinLevelGame() {
   const color = resin?.color ?? '#a78bfa'
 
   return (
-    <div className="flex flex-col items-center h-full min-h-screen p-6 max-w-sm mx-auto">
+    <div className="flex flex-col items-center h-dvh max-w-sm mx-auto px-5 safe-top safe-bottom">
       {/* Header */}
       <div className="w-full flex items-center justify-between mb-4">
         <button onClick={abandonPrint} className="font-mono text-xs text-white/30 hover:text-white/60">

@@ -33,7 +33,7 @@ export default function PrintingScreen() {
   const color = resin?.color ?? printer.accentColor
 
   return (
-    <div className="flex flex-col items-center h-full min-h-screen p-6 max-w-sm mx-auto">
+    <div className="flex flex-col items-center h-dvh max-w-sm mx-auto px-5 safe-top safe-bottom">
       <div className="w-full flex items-center justify-between mb-8">
         <button onClick={abandonPrint} className="font-mono text-xs text-white/20 hover:text-white/50">
           ✕ Abandonner

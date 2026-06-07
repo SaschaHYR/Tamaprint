@@ -5,7 +5,6 @@ const STEP_LABELS: Partial<Record<PrintStep, string>> = {
   calibration: 'Calibration plateau',
   mixing: 'Mélange résine',
   temperature: 'Contrôle température',
-  resin_settings: 'Paramètres exposition',
   resin_level: 'Niveau vat',
   printing: 'Impression',
   first_layer: 'Adhérence couche 1',
@@ -15,7 +14,7 @@ const STEP_LABELS: Partial<Record<PrintStep, string>> = {
 }
 
 const FLOW_STEPS: PrintStep[] = [
-  'select_resin', 'calibration', 'mixing', 'temperature', 'resin_settings',
+  'select_resin', 'calibration', 'mixing', 'temperature',
   'resin_level', 'printing', 'first_layer', 'washing', 'curing', 'result',
 ]
 

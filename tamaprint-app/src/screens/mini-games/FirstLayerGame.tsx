@@ -106,7 +106,7 @@ export default function FirstLayerGame() {
   const alertPct = (alertTimer / ALERT_WINDOW) * 100
 
   return (
-    <div className="flex flex-col items-center h-full min-h-screen p-6 max-w-sm mx-auto">
+    <div className="flex flex-col items-center h-dvh max-w-sm mx-auto px-5 safe-top safe-bottom">
       <div className="w-full flex items-center justify-between mb-4">
         <button onClick={abandonPrint} className="font-mono text-xs text-white/30 hover:text-white/60">✕</button>
         <span className="font-mono text-xs tracking-widest uppercase text-white/50">Adhérence couche 1</span>
